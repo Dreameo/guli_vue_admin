@@ -70,11 +70,9 @@
       </el-form-item>
 
       <!-- 课程简介 TODO -->
+      <!-- 课程简介-->
       <el-form-item label="课程简介">
-        <el-input
-          v-model="courseInfo.description"
-          placeholder=" 示例：机器学习项目课：从基础到搭建项目视频课程。专业名称注意大小写"
-        />
+        <tinymce :height="300" v-model="courseInfo.description" />
       </el-form-item>
 
       <!-- 课程封面 TODO -->
@@ -117,12 +115,17 @@
 <script>
 import course from "@/api/edu/course";
 import subject from "@/api/edu/subject";
+import Tinymce from "@/components/Tinymce"; // 引入组件
+import chapter from "@/api/edu/chapter";
 
 export default {
+  components: { Tinymce }, // 声明组件
+
   data() {
     return {
       saveBtnDisabled: false, // 保存按钮是否禁用
       courseInfo: {
+        id: "",
         title: "",
         subjectParentId: "", // 一级分类
         subjectId: "", // 二级分类
@@ -137,12 +140,21 @@ export default {
       subjectOneList: [], // 一级分类
       subjectTwoList: [], // 二级分类
       BASE_API: process.env.BASE_API, // 接口地址
+      courseId: "", // courseId
     };
   },
 
   created() {
+    this.init();
     this.getTeacherList(); // 获取教师列表
-    this.getSubjectOneList(); // 获取一级分类
+  },
+
+  watch: {
+    //监听
+    $route(to, from) {
+      //路由变化方式，路由发生变化，方法就会执行
+      this.init();
+    },
   },
 
   methods: {
@@ -151,7 +163,56 @@ export default {
     //   this.$router.push({ path: "/course/chapter/1" });
     // },
 
+    init() {
+      // 初始化方法 判断 路径中是否有参数， 有参数的话就是更新操作
+      // 修改课程信息 判断路径中是否存在id值 如果存在 那么就是修改操作， 不然就是新增操作
+      if (this.$route.params && this.$route.params.id) {
+        this.courseId = this.$route.params.id;
+        this.getCourseInfoById();
+      } else {
+        this.courseInfo = {};
+        this.courseInfo.cover = "/static/cover/01.jpg"
+        this.getSubjectOneList(); // 获取一级分类
+      }
+    },
+
+    getCourseInfoById() {
+      // 根据id查询课程信息
+      course
+        .getCourseInfoById(this.courseId)
+        .then((response) => {
+          this.courseInfo = response.data.courseInfoVo;
+
+          // 获取所有分类信息
+          subject
+            .getSubjectList()
+            .then((response) => {
+              this.subjectOneList = response.data.list; // 所有一级分类
+
+              // 遍历所以一级分类
+              for (var i = 0; i < this.subjectOneList.length; i++) {
+                var oneSubject = this.subjectOneList[i];
+                if (oneSubject.id == this.courseInfo.subjectParentId) {
+                  this.subjectTwoList = oneSubject.children;
+                }
+              }
+            })
+            .catch((error) => {});
+        })
+        .catch((error) => {});
+    },
+
     saveOrUpdate() {
+      // 根据id来判断是 修改还是添加
+      if (!this.courseInfo.id) {
+        this.addCourse();
+      } else {
+        this.updateCourse();
+      }
+    },
+
+    addCourse() {
+      // 添加课程
       course
         .addCourseInfo(this.courseInfo)
         .then((response) => {
@@ -164,6 +225,23 @@ export default {
           this.$router.push({
             path: "/course/chapter/" + response.data.courseId,
           });
+        })
+        .catch((error) => {});
+    },
+
+    updateCourse() {
+      // 更新课程
+      course
+        .updateCourseInfo(this.courseInfo)
+        .then((reponse) => {
+          // 提示
+          this.$message({
+            type: "success",
+            message: "修改课程信息成功！",
+          });
+
+          // 2. 跳转
+          this.$router.push({ path: "/course/chapter/" + this.courseId });
         })
         .catch((error) => {});
     },
