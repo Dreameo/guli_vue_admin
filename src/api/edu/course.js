@@ -50,7 +50,27 @@ export default {
             url: `/eduservice/course/publishCourse/${course_id}`,
             method: 'post',
         })
+    },
+
+
+    // 7. 课程列表查询
+    getCourseList() {
+        return request({
+            url: `/eduservice/course/getCourseList`,
+            method: 'get',
+        })
+    },
+
+    // 8. 根据课程id删除课程信息
+    deleteCourseById(id) {
+        return request({
+            url: `/eduservice/course/deleteCourseById/${id}`,
+            method: 'delete',
+        })
     }
+
+   
+
 
 
 }

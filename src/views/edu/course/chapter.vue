@@ -48,14 +48,35 @@
           />
         </el-form-item>
         <el-form-item label="是否免费">
-          <el-radio-group v-model="video.free">
-            <el-radio :label="true">免费</el-radio>
-            <el-radio :label="false">默认</el-radio>
+          <el-radio-group v-model="video.isFree">
+            <el-radio :label="0">免费</el-radio>
+            <el-radio :label="1">收费</el-radio>
           </el-radio-group>
         </el-form-item>
 
         <el-form-item label="上传视频">
-          <!-- TODO -->
+          <el-upload
+            :on-success="handleVodUploadSuccess"
+            :on-remove="handleVodRemove"
+            :before-remove="beforeVodRemove"
+            :on-exceed="handleUploadExceed"
+            :file-list="fileList"
+            :action="BASE_API + '/eduvod/video/uploadAliVideo'"
+            :limit="1"
+            class="upload-demo"
+          >
+            <el-button size="small" type="primary">上传视频</el-button>
+            <el-tooltip placement="right-end">
+              <div slot="content">
+                最大支持1G，<br />
+                支持3GP、ASF、AVI、DAT、DV、FLV、F4V、<br />
+                GIF、M2T、M4V、MJ2、MJPEG、MKV、MOV、MP4、<br />
+                MPE、MPG、MPEG、M TS、OGG、QT、RM、RMVB、<br />
+                SWF、TS、VOB、WMV、WEBM 等视频格式上传
+              </div>
+              <i class="el-icon-question" />
+            </el-tooltip>
+          </el-upload>
         </el-form-item>
       </el-form>
 
@@ -141,12 +162,17 @@ export default {
         // 小节
         title: "",
         sort: "",
-        free: "",
+        isFree: "",
+        videoSourceId: "",
+        videoOriginalName: "",
       },
 
       dialogChapterFormVisible: false, // 章节弹出框标识
       dialogVideoFormVisible: false, // 小节弹出框标识
       saveVideoBtnDisabled: false,
+
+      BASE_API: process.env.BASE_API,
+      fileList: [],
     };
   },
 
@@ -156,8 +182,8 @@ export default {
     if (this.$route.params && this.$route.params.id) {
       // url中是否有参数  并且 参数id 是否存在
       this.courseId = this.$route.params.id;
-      console.log("courseId :" + this.courseId)
-      this.getChapters(); 
+      console.log("courseId :" + this.courseId);
+      this.getChapters();
     }
   },
 
@@ -274,6 +300,18 @@ export default {
     //====================章节操作结束=============================
 
     //====================小节操作开始=============================
+
+    handleVodUploadSuccess(response, file, fileList) {
+      //上传视频成功调用的方法
+      //上传视频id赋值
+      this.video.videoSourceId = response.data.videoId;
+      //上传视频名称赋值
+      this.video.videoOriginalName = file.name;
+    },
+    handleUploadExceed() {
+      this.$message.warning("想要重新上传视频，请先删除已上传的视频");
+    },
+
     openVideo(chapter_id) {
       this.video = {}; // 清空 video数据
       this.video.chapterId = chapter_id;
@@ -300,7 +338,9 @@ export default {
 
     updateVideo() {
       // 修改小节
-      video.updateVideo(this.video).then(response => {
+      video
+        .updateVideo(this.video)
+        .then((response) => {
           //// 提示
           this.$message({
             type: "success",
@@ -308,23 +348,22 @@ export default {
           });
 
           // 关闭 弹窗
-          this.dialogVideoFormVisible = false
+          this.dialogVideoFormVisible = false;
 
-          this.getChapters()
-      }).catch(error =>{
-
-      })
+          this.getChapters();
+        })
+        .catch((error) => {});
     },
 
     editVideo(video_id) {
-      this.openVideo()
+      this.openVideo();
 
-      video.getVideoById(video_id).then(response => {
-          this.video = response.data.video
-      }).catch(error => {
-
-      })
-
+      video
+        .getVideoById(video_id)
+        .then((response) => {
+          this.video = response.data.video;
+        })
+        .catch((error) => {});
     },
 
     removeVideo(video_id) {
@@ -333,19 +372,19 @@ export default {
         .then((reponse) => {
           // 提示
           this.$message({
-            type: 'success',
-            message: '删除小节成功！'
-          })
+            type: "success",
+            message: "删除小节成功！",
+          });
 
           // 查询 全部章节列表
-          this.getChapters()
+          this.getChapters();
         })
         .catch((error) => {});
     },
 
     saveOrUpdateVideo() {
       this.video.courseId = this.courseId;
-      console.log(video.id)
+      console.log(video.id);
       if (!this.video.id) {
         this.addVideo();
       } else {
