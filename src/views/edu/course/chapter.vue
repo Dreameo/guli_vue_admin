@@ -308,12 +308,15 @@ export default {
       //上传视频名称赋值
       this.video.videoOriginalName = file.name;
     },
-    handleUploadExceed() {
+
+    //视图上传多于一个视频
+    handleUploadExceed(files, fileList) {
       this.$message.warning("想要重新上传视频，请先删除已上传的视频");
     },
 
     openVideo(chapter_id) {
       this.video = {}; // 清空 video数据
+      this.fileList = []
       this.video.chapterId = chapter_id;
       this.dialogVideoFormVisible = true;
     },
@@ -356,12 +359,17 @@ export default {
     },
 
     editVideo(video_id) {
-      this.openVideo();
+      // this.openVideo();
+      this.dialogVideoFormVisible = true;
 
       video
         .getVideoById(video_id)
         .then((response) => {
           this.video = response.data.video;
+          var videoName = this.video.videoOriginalName;
+          if (videoName)
+            this.fileList = [{ name: this.video.videoOriginalName }];
+          else this.fileList = [];
         })
         .catch((error) => {});
     },

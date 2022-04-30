@@ -34,5 +34,13 @@ export default {
             data:video
         })
     },
+
+    // 5. 删除小节中的视频
+    removeVideoById(id) {
+        return request({
+            url: `/eduvod/video/deleteVideoById/${id}`,
+            method: 'get',
+        })
+    }
     
 }
